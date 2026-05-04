@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: #070b13;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0d1421;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1e2d42;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #22d3ee40;
+  }
+}
+
+@layer components {
+  .prose-geo {
+    @apply prose prose-invert prose-sm max-w-none;
+    @apply prose-headings:text-cyan-300 prose-headings:font-semibold;
+    @apply prose-p:text-slate-300 prose-p:leading-relaxed;
+    @apply prose-code:text-cyan-400 prose-code:bg-slate-800/60 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:before:content-none prose-code:after:content-none;
+    @apply prose-pre:bg-slate-900 prose-pre:border prose-pre:border-slate-700/60 prose-pre:rounded-lg;
+    @apply prose-a:text-cyan-400 prose-a:no-underline hover:prose-a:underline;
+    @apply prose-strong:text-slate-100;
+    @apply prose-li:text-slate-300;
+    @apply prose-table:text-sm;
+    @apply prose-th:text-cyan-300 prose-th:bg-slate-800/50;
+    @apply prose-td:text-slate-300;
+    @apply prose-blockquote:border-cyan-500/40 prose-blockquote:text-slate-400;
+    @apply prose-hr:border-slate-700/50;
+  }
+
+  .cursor-blink::after {
+    content: '▋';
+    @apply text-cyan-400 animate-pulse;
+  }
+}

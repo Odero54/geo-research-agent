@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.venv
+.vscode
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+reports/
+tests/
+frontend/node_modules
+ARCHITECTURE.md

@@ -15,37 +15,38 @@ Workflow modes:
 """
 
 from __future__ import annotations
-import asyncio
+
 import argparse
+import asyncio
 import json
-import sys
 import os
-from pathlib import Path
+import sys
 from datetime import datetime
+from pathlib import Path
 
 from rich.console import Console
-from rich.panel import Panel
 from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.rule import Rule
-from rich import print as rprint
 
 # ── Ensure project root is on path ───────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 
 from agents import Runner
-from agents.orchestrator import orchestrator
-from agents.specialists import (
-    literature_agent,
-    geospatial_data_agent,
+
+from orchestrator import orchestrator
+from patterns import (
+    EvaluatorOptimizerWorkflow,
+    ParallelWorkflow,
+    SequentialWorkflow,
+)
+from settings import MAX_TURNS
+from specialists import (
     eo_analysis_agent,
+    geospatial_data_agent,
+    literature_agent,
     report_writer_agent,
 )
-from workflows.patterns import (
-    SequentialWorkflow,
-    ParallelWorkflow,
-    EvaluatorOptimizerWorkflow,
-)
-from config.settings import MAX_TURNS
 
 console = Console()
 
@@ -80,13 +81,16 @@ DEMO_QUERIES = [
 
 # ── Orchestrated (default) ───────────────────────────────────────────────────
 
+
 async def run_orchestrated(query: str, max_turns: int = MAX_TURNS) -> str:
     """Full orchestrator with guardrails and specialist handoffs."""
-    console.print(Panel(
-        "[bold cyan]GeoResearch Agentic AI[/] — Orchestrated Mode\n"
-        "[dim]Guardrails: domain relevance ✓ | safety ✓ | hallucination ✓ | accuracy ✓[/]",
-        border_style="cyan",
-    ))
+    console.print(
+        Panel(
+            "[bold cyan]GeoResearch Agentic AI[/] — Orchestrated Mode\n"
+            "[dim]Guardrails: domain relevance ✓ | safety ✓ | hallucination ✓ | accuracy ✓[/]",
+            border_style="cyan",
+        )
+    )
 
     try:
         result = await Runner.run(orchestrator, input=query, max_turns=max_turns)
@@ -99,6 +103,7 @@ async def run_orchestrated(query: str, max_turns: int = MAX_TURNS) -> str:
 
 # ── Sequential Workflow ───────────────────────────────────────────────────────
 
+
 async def run_sequential(query: str) -> str:
     workflow = SequentialWorkflow(
         agents=[literature_agent, geospatial_data_agent, eo_analysis_agent, report_writer_agent],
@@ -109,6 +114,7 @@ async def run_sequential(query: str) -> str:
 
 
 # ── Parallel Workflow ─────────────────────────────────────────────────────────
+
 
 async def run_parallel(query: str) -> str:
     workflow = ParallelWorkflow(
@@ -122,10 +128,12 @@ async def run_parallel(query: str) -> str:
 
 # ── Evaluator-Optimizer Workflow ──────────────────────────────────────────────
 
+
 async def run_evaluator(query: str) -> str:
     # Use orchestrator as generator, a lightweight agent as evaluator
     from agents import Agent
-    from config.settings import GUARDRAIL_MODEL
+
+    from settings import GUARDRAIL_MODEL
 
     evaluator = Agent(
         name="ReportEvaluator",
@@ -133,7 +141,7 @@ async def run_evaluator(query: str) -> str:
         instructions=(
             "You evaluate geospatial research report quality. "
             "Score comprehensiveness (sections covered), technical accuracy, "
-            "and actionability. Return JSON: {\"score\": 0.0-1.0, \"feedback\": \"...\"}"
+            'and actionability. Return JSON: {"score": 0.0-1.0, "feedback": "..."}'
         ),
     )
     workflow = EvaluatorOptimizerWorkflow(
@@ -148,6 +156,7 @@ async def run_evaluator(query: str) -> str:
 
 # ── Output Handling ───────────────────────────────────────────────────────────
 
+
 def save_report(content: str, query: str, workflow: str) -> Path:
     """Save the report to a timestamped Markdown file."""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -156,9 +165,7 @@ def save_report(content: str, query: str, workflow: str) -> Path:
     output_dir = Path("reports")
     output_dir.mkdir(exist_ok=True)
     path = output_dir / filename
-    path.write_text(
-        f"---\nquery: {query}\nworkflow: {workflow}\ngenerated: {ts}\n---\n\n{content}"
-    )
+    path.write_text(f"---\nquery: {query}\nworkflow: {workflow}\ngenerated: {ts}\n---\n\n{content}")
     return path
 
 
@@ -174,6 +181,7 @@ def display_report(content: str) -> None:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+
 async def main(args: argparse.Namespace) -> None:
     # Check for API key
     if not os.getenv("OPENAI_API_KEY"):
@@ -184,18 +192,23 @@ async def main(args: argparse.Namespace) -> None:
     # Select query
     if args.demo:
         import random
+
         demo = random.choice(DEMO_QUERIES)
         query = demo["query"]
-        console.print(Panel(
-            f"[bold yellow]Demo Query:[/]\n{query}",
-            border_style="yellow",
-        ))
+        console.print(
+            Panel(
+                f"[bold yellow]Demo Query:[/]\n{query}",
+                border_style="yellow",
+            )
+        )
     elif args.query:
         query = args.query
     else:
         console.print("[bold cyan]GeoResearch Agentic AI[/] — Interactive Mode")
         console.print("Type your geospatial research question below.")
-        console.print("[dim](Examples: drought monitoring, flood detection, crop yield, EO foundation models)[/]\n")
+        console.print(
+            "[dim](Examples: drought monitoring, flood detection, crop yield, EO foundation models)[/]\n"
+        )
         query = input("→ Your question: ").strip()
         if not query:
             console.print("[red]No query provided. Exiting.[/]")
@@ -207,9 +220,9 @@ async def main(args: argparse.Namespace) -> None:
     # Dispatch
     runners = {
         "orchestrated": lambda q: run_orchestrated(q, max_turns=args.max_turns),
-        "sequential":   run_sequential,
-        "parallel":     run_parallel,
-        "evaluator":    run_evaluator,
+        "sequential": run_sequential,
+        "parallel": run_parallel,
+        "evaluator": run_evaluator,
     }
     runner_fn = runners.get(workflow, runners["orchestrated"])
 
@@ -233,12 +246,17 @@ async def main(args: argparse.Namespace) -> None:
     # JSON export
     if args.json_export:
         json_path = Path(args.json_export)
-        json_path.write_text(json.dumps({
-            "query": query,
-            "workflow": workflow,
-            "output": output,
-            "timestamp": datetime.now().isoformat(),
-        }, indent=2))
+        json_path.write_text(
+            json.dumps(
+                {
+                    "query": query,
+                    "workflow": workflow,
+                    "output": output,
+                    "timestamp": datetime.now().isoformat(),
+                },
+                indent=2,
+            )
+        )
         console.print(f"[green]✓ JSON exported:[/] {json_path}")
 
 
@@ -254,23 +272,39 @@ Examples:
   python main.py --workflow evaluator --query "Drought early warning systems in East Africa" --depth deep
         """,
     )
-    parser.add_argument("--query",    "-q", type=str, help="Research question")
-    parser.add_argument("--domain",   "-d", type=str, default="remote_sensing",
-                        help="Geospatial domain (agriculture|climate|drought_monitoring|...)")
-    parser.add_argument("--depth",    type=str, default="standard",
-                        choices=["quick", "standard", "deep"],
-                        help="Research depth")
-    parser.add_argument("--workflow", "-w", type=str, default="orchestrated",
-                        choices=["orchestrated", "sequential", "parallel", "evaluator"],
-                        help="Agentic workflow pattern to use")
-    parser.add_argument("--max-turns", type=int, default=MAX_TURNS,
-                        help="Maximum agent turns (default: 40)")
-    parser.add_argument("--save",     "-s", action="store_true",
-                        help="Save report to reports/ directory")
-    parser.add_argument("--json-export", type=str, metavar="FILE",
-                        help="Export result as JSON to FILE")
-    parser.add_argument("--demo",     action="store_true",
-                        help="Run a random built-in demo query")
+    parser.add_argument("--query", "-q", type=str, help="Research question")
+    parser.add_argument(
+        "--domain",
+        "-d",
+        type=str,
+        default="remote_sensing",
+        help="Geospatial domain (agriculture|climate|drought_monitoring|...)",
+    )
+    parser.add_argument(
+        "--depth",
+        type=str,
+        default="standard",
+        choices=["quick", "standard", "deep"],
+        help="Research depth",
+    )
+    parser.add_argument(
+        "--workflow",
+        "-w",
+        type=str,
+        default="orchestrated",
+        choices=["orchestrated", "sequential", "parallel", "evaluator"],
+        help="Agentic workflow pattern to use",
+    )
+    parser.add_argument(
+        "--max-turns", type=int, default=MAX_TURNS, help="Maximum agent turns (default: 40)"
+    )
+    parser.add_argument(
+        "--save", "-s", action="store_true", help="Save report to reports/ directory"
+    )
+    parser.add_argument(
+        "--json-export", type=str, metavar="FILE", help="Export result as JSON to FILE"
+    )
+    parser.add_argument("--demo", action="store_true", help="Run a random built-in demo query")
     return parser.parse_args()
 
 

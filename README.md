@@ -1,3 +1,13 @@
+---
+title: GeoResearch Agentic AI
+emoji: 🌍
+colorFrom: blue
+colorTo: cyan
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # GeoResearch Agentic AI 🛰️
 
 **Deep research agentic AI for geospatial scientists** — built with the OpenAI Agents SDK,
